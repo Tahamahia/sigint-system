@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Database
+*.db
+pgdata/
+
+# Build
+dist/
+build/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Environment
+.env.local
+.env.production
+
+# Map tiles (too large for git)
+map_tiles/
+
+# Uploads
+uploads/
+
+# Docker volumes
+docker-data/
+
+# Logs
+*.log

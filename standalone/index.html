@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIGINT Dashboard</title>
+<style>
+:root{--bg:#0a0e17;--bg2:#111827;--glass:rgba(15,23,42,0.7);--border:rgba(100,116,139,0.2);--text:#e2e8f0;--dim:#94a3b8;--muted:#64748b;--cyan:#06b6d4;--mag:#d946ef;--amber:#f59e0b;--green:#10b981;--red:#ef4444;--blue:#3b82f6;--mono:'Courier New',monospace;--sans:system-ui,-apple-system,sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--muted);border-radius:3px}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 20px;background:var(--glass);border-bottom:1px solid var(--border);backdrop-filter:blur(12px)}
+.logo{display:flex;align-items:center;gap:10px}.logo span{font-size:24px;color:var(--cyan);animation:pulse 2s infinite}
+.logo h1{font-size:18px;font-weight:700;letter-spacing:2px}.logo h1 b{color:var(--cyan);font-weight:400}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.badge{display:flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono);background:rgba(16,185,129,.15);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+.stats{display:flex;gap:20px}.stat{text-align:center}.stat-v{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--cyan)}.stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.body{display:flex;flex:1;overflow:hidden}
+nav{display:flex;flex-direction:column;width:68px;padding:10px 6px;gap:2px;border-right:1px solid var(--border);background:var(--glass)}
+nav button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 6px;border:none;background:0;color:var(--muted);cursor:pointer;border-radius:8px;font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;position:relative;transition:all .2s}
+nav button:hover{background:rgba(100,116,139,.1);color:var(--text)}
+nav button.active{background:rgba(6,182,212,.1);color:var(--cyan)}
+nav button.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--cyan);border-radius:0 3px 3px 0;box-shadow:0 0 8px var(--cyan)}
+nav button em{font-size:18px;font-style:normal}
+main{flex:1;padding:16px;overflow-y:auto}
+.panel{background:var(--glass);border:1px solid var(--border);border-radius:12px;backdrop-filter:blur(12px)}
+.tab-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.tab-header h2{font-size:16px}
+.controls{display:flex;gap:6px;align-items:center}
+select{background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:12px}
+.feed{overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:1px;max-height:calc(100vh - 160px)}
+.entry{display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:3px;font-family:var(--mono);font-size:11px;border-left:3px solid var(--muted);background:rgba(0,0,0,.2);animation:slideIn .3s ease}
+.entry:hover{background:rgba(100,116,139,.08)}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.t{color:var(--muted);min-width:75px}.p{font-weight:700;min-width:45px}.f{color:var(--dim)}.s{color:var(--green)}.pw{color:var(--muted)}
+.rid{color:var(--cyan)}.tg{color:var(--mag)}
+.ct{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700}
+.ct-GROUP{background:rgba(6,182,212,.15);color:var(--cyan)}.ct-PRIVATE{background:rgba(217,70,239,.15);color:var(--mag)}.ct-EMERGENCY{background:rgba(239,68,68,.2);color:var(--red);animation:pulse 1s infinite}
+.enc{color:var(--red);font-size:10px}.coords{color:var(--green)}.spd{color:var(--muted)}
+.topo-wrap{height:calc(100vh - 160px)}.topo-svg{width:100%;height:100%}
+.topo-link{stroke:rgba(100,116,139,.25);stroke-linecap:round}.node-label{fill:var(--dim);font-size:9px;font-family:var(--sans)}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--dim)}.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.map-wrap{height:calc(100vh - 160px);position:relative;border-radius:12px;overflow:hidden;background:#0d1117}
+.map-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(100,116,139,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(100,116,139,.06) 1px,transparent 1px);background-size:40px 40px}
+.map-dot{position:absolute;width:10px;height:10px;background:var(--cyan);border-radius:50%;border:2px solid rgba(6,182,212,.4);box-shadow:0 0 8px rgba(6,182,212,.5);cursor:pointer;transform:translate(-50%,-50%);transition:all .3s}
+.map-dot:hover{transform:translate(-50%,-50%) scale(1.8)}
+.map-tooltip{position:absolute;background:rgba(0,0,0,.9);color:var(--text);padding:8px 12px;border-radius:6px;font-size:11px;font-family:var(--mono);pointer-events:none;z-index:10;line-height:1.6;border:1px solid var(--border);display:none}
+.map-info{position:absolute;top:10px;left:10px;background:var(--glass);padding:8px 14px;border-radius:8px;font-size:11px;color:var(--dim);backdrop-filter:blur(8px);border:1px solid var(--border)}
+.sdr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.sdr-card{padding:16px}.sdr-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.sdr-hdr em{font-size:22px;font-style:normal}.sdr-hdr h3{font-size:14px}
+.sdr-type{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.sdr-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px}
+.sdr-lbl{color:var(--muted)}.sdr-val{font-family:var(--mono)}
+.mode-SWEEP{color:var(--cyan)}.mode-PINNED{color:var(--green)}.mode-IDLE{color:var(--muted)}
+/* Audio Player */
+.audio-player { position:fixed; bottom:20px; right:20px; padding:12px 16px; background:var(--glass); border:1px solid rgba(6,182,212,0.3); border-radius:12px; backdrop-filter:blur(10px); z-index:100; min-width:220px; box-shadow:0 0 15px rgba(6,182,212,0.1); }
+.audio-hdr { display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+.audio-hdr span { font-size:12px; font-weight:700; color:var(--text); letter-spacing:1px; text-transform:uppercase; }
+.audio-ind { font-size:18px; opacity:0.3; transition:0.3s; margin-top:-2px;}
+.audio-ind.active { opacity:1; animation:pulse-glow 0.8s infinite; color:var(--cyan); }
+@keyframes pulse-glow { 0%,100%{transform:scale(1);filter:drop-shadow(0 0 2px var(--cyan))} 50%{transform:scale(1.1);filter:drop-shadow(0 0 6px var(--cyan))} }
+.audio-ctrl { display:flex; align-items:center; gap:8px; }
+.audio-btn { background:var(--bg2); border:1px solid var(--border); color:var(--text); padding:4px 8px; border-radius:6px; font-size:11px; cursor:pointer; font-weight:700; font-family:var(--mono);}
+.audio-btn.on { color:var(--green); border-color:rgba(16,185,129,0.3); }
+/* Modal */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.8); backdrop-filter:blur(4px); z-index:1000; display:none; align-items:center; justify-content:center; }
+.modal { background:var(--glass); border:1px solid var(--border); padding:20px; border-radius:12px; width:90%; max-width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
+.modal-hdr { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+.modal-hdr h3 { font-size:16px; font-weight:600; }
+.modal-close { background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; }
+.modal-close:hover { color:var(--text); }
+.modal-form { display:flex; flex-direction:column; gap:12px; }
+.modal-lbl { font-size:11px; color:var(--dim); display:flex; flex-direction:column; gap:4px; font-weight:700; text-transform:uppercase; }
+.modal-inp { background:var(--bg2); border:1px solid var(--border); color:var(--text); padding:8px; border-radius:6px; font-size:12px; font-family:var(--sans); }
+.modal-inp:focus { outline:none; border-color:var(--cyan); }
+.modal-btn-row { display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+.btn-save { background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.3); color:var(--cyan); padding:8px 16px; border-radius:6px; font-weight:700; cursor:pointer; transition:all 0.2s; }
+.btn-save:hover { background:rgba(6,182,212,0.25); }
+.detail-btn { background:rgba(6,182,212,0.15); border:1px solid rgba(6,182,212,0.3); color:var(--cyan); margin-top:8px; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:700; width:100%; transition:0.2s; }
+.detail-btn:hover { background:rgba(6,182,212,0.25); }
+</style>
+</head>
+<body>
+<header>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div class="logo"><span>◉</span><h1>SIGINT<b>Dashboard</b></h1></div>
+    <div class="badge"><span class="dot"></span>LIVE SIMULATION</div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="stSig">0</div><div class="stat-l">Signals</div></div>
+    <div class="stat"><div class="stat-v" id="stRad">30</div><div class="stat-l">Radios</div></div>
+    <div class="stat"><div class="stat-v" id="stGps">0</div><div class="stat-l">GPS</div></div>
+    <div class="stat"><div class="stat-v" id="stEvt">0</div><div class="stat-l">Events</div></div>
+  </div>
+</header>
+<div class="body">
+  <nav>
+    <button class="active" onclick="go('live')" id="b-live"><em>📡</em>Live</button>
+    <button onclick="go('topo')" id="b-topo"><em>🔗</em>Topo</button>
+    <button onclick="go('map')" id="b-map"><em>🗺️</em>Map</button>
+    <button onclick="go('sdr')" id="b-sdr"><em>📻</em>SDR</button>
+  </nav>
+  <main>
+    <div id="tab-live">
+      <div class="tab-header"><h2>📡 Live Signal Feed</h2>
+        <div class="controls"><select id="pf" onchange="render()"><option value="">All</option><option>DMR</option><option>TETRA</option><option>P25</option></select></div>
+      </div>
+      <div class="feed panel" id="feed"></div>
+    </div>
+    <div id="tab-topo" style="display:none">
+      <div class="tab-header"><h2>🔗 Network Topology</h2>
+        <div class="legend"><span><i style="background:var(--blue)"></i>Network</span><span><i style="background:var(--cyan)"></i>Base Stn</span><span><i style="background:var(--mag)"></i>Talkgroup</span><span><i style="background:var(--amber)"></i>Radio</span></div>
+      </div>
+      <div class="panel topo-wrap"><svg class="topo-svg" id="svg"></svg></div>
+    </div>
+    <div id="tab-map" style="display:none">
+      <div class="tab-header"><h2>🗺️ Radio GPS Positions</h2><span id="mc" style="font-size:12px;color:var(--muted);font-family:var(--mono)"></span></div>
+      <div class="panel map-wrap" id="mw"><div class="map-grid"></div><div class="map-info">Libya · Tripoli Region · 32.90°N 13.18°E</div></div>
+    </div>
+    <div id="tab-sdr" style="display:none">
+      <div class="tab-header"><h2>📻 SDR Devices</h2></div>
+      <div class="sdr-grid" id="sg"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Audio Player -->
+<div class="audio-player">
+  <div class="audio-hdr"><span class="audio-ind" id="audInd">🔊</span><span>Decrypted Audio</span></div>
+  <div class="audio-ctrl">
+    <button class="audio-btn on" id="btnAutoplay" onclick="toggleAudio()">⏵ AUTO</button>
+    <input type="range" id="audVol" min="0" max="1" step="0.05" value="0.7" style="width:100px;accent-color:var(--cyan)">
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hdr"><h3>Edit Network</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-form">
+      <label class="modal-lbl">Network Name <input type="text" id="mName" class="modal-inp"></label>
+      <label class="modal-lbl">Encryption Type <select id="mEnc" class="modal-inp"><option>NONE</option><option>AES-256</option><option>DES</option><option>RC4</option><option>ARC4</option></select></label>
+      <label class="modal-lbl">Decryption Key <input type="text" id="mKey" class="modal-inp" style="font-family:var(--mono)" placeholder="e.g. 0x1A2B..."></label>
+      <div class="modal-btn-row"><button class="btn-save" onclick="saveModal()">💾 Save Changes</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== SIMULATED DATA ENGINE =====
+const PROTOS=['DMR','TETRA','P25'],CALLS=['GROUP','GROUP','GROUP','PRIVATE','EMERGENCY'];
+const FREQS={DMR:[460.1,460.2,460.3,460.4],TETRA:[390.1,390.2,390.3],P25:[855.1,855.2,855.3]};
+const TGS={DMR:[100,101,102,200],TETRA:[1000,1001,1002,2000,2001],P25:[500,501,502,503]};
+const GPS_C=[32.90,13.18];
+let events=[],sigC=0,evtC=0,gpsC=0,gpsPos=[];
+
+function rnd(a,b){return Math.random()*(b-a)+a}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function uid(){return Math.random().toString(36).slice(2,10)}
+function now(){return new Date().toISOString()}
+function fmt(ts){try{return new Date(ts).toLocaleTimeString('en-US',{hour12:false})}catch(e){return''}}
+
+function genSignal(){
+  let p=pick(PROTOS),f=pick(FREQS[p])+rnd(-0.01,0.01);
+  sigC++;
+  return{type:'signal_log',id:uid(),protocol_guess:p,frequency:+f.toFixed(4),bandwidth_khz:p==='TETRA'?25:12.5,snr_db:+rnd(6,35).toFixed(1),power_dbm:+rnd(-85,-35).toFixed(0),timestamp:now()};
+}
+function genMeta(){
+  let p=pick(PROTOS),rid=3000001+Math.floor(rnd(0,30)),tg=pick(TGS[p]),ct=pick(CALLS),ts=pick([1,2]),enc=Math.random()<0.12;
+  evtC++;
+  return{type:'metadata',id:uid(),protocol:p,radio_id:rid,radio_alias:'Unit-'+(rid-3000000),talkgroup:tg,call_type:ct,time_slot:ts,encrypted:enc,frequency:+pick(FREQS[p]).toFixed(4),timestamp:now()};
+}
+function genGPS(){
+  let idx=pick([3,6,9,12,15,18,21,24,27,30]),rid=3000000+idx;
+  let lat=+(GPS_C[0]+rnd(-0.25,0.25)).toFixed(6),lon=+(GPS_C[1]+rnd(-0.25,0.25)).toFixed(6);
+  let spd=+rnd(0,100).toFixed(1),hdg=+rnd(0,360).toFixed(1);
+  gpsC++;
+  let g={type:'gps_event',id:uid(),radio_id:rid,radio_alias:'Unit-'+idx,latitude:lat,longitude:lon,speed_kmh:spd,heading:hdg,source_protocol:pick(['LRRP','LIP']),timestamp:now()};
+  // Update positions
+  let existing=gpsPos.findIndex(p=>p.radio_id===rid);
+  if(existing>=0) gpsPos[existing]=g; else gpsPos.push(g);
+  return g;
+}
+
+function tick(){
+  events.push(genSignal());
+  if(Math.random()<0.7) events.push(genMeta());
+  if(Math.random()<0.2) events.push(genGPS());
+  if(events.length>500) events=events.slice(-500);
+  document.getElementById('stSig').textContent=sigC;
+  document.getElementById('stEvt').textContent=evtC;
+  document.getElementById('stGps').textContent=gpsC;
+  if(activeTab==='live') render();
+}
+
+// ===== TABS =====
+let activeTab='live';
+function go(id){
+  ['live','topo','map','sdr'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===id?'':'none';document.getElementById('b-'+t).className=t===id?'active':'';});
+  activeTab=id;
+  if(id==='topo') drawTopo();
+  if(id==='map') drawMap();
+  if(id==='sdr') drawSDR();
+}
+
+// ===== LIVE FEED =====
+const PC={DMR:'var(--cyan)',TETRA:'var(--mag)',P25:'var(--amber)',UNKNOWN:'var(--muted)'};
+function render(){
+  let f=document.getElementById('pf').value;
+  let items=f?events.filter(e=>(e.protocol_guess||e.protocol)===f):events;
+  let html=items.slice(-150).map(e=>{
+    let c=PC[e.protocol_guess||e.protocol]||PC.UNKNOWN;
+    if(e.type==='signal_log') return`<div class="entry" style="border-left-color:${c}"><span class="t">${fmt(e.timestamp)}</span><span class="p" style="color:${c}">${e.protocol_guess}</span><span class="f">${e.frequency.toFixed(4)} MHz</span><span class="s">SNR ${e.snr_db}</span><span class="pw">${e.power_dbm} dBm</span></div>`;
+    if(e.type==='metadata'){let enc=e.encrypted?'<span class="enc">🔒</span>':'';return`<div class="entry" style="border-left-color:${c}"><span class="t">${fmt(e.timestamp)}</span><span class="p" style="color:${c}">${e.protocol}</span><span class="rid">RID:${e.radio_id}</span><span class="tg">TG:${e.talkgroup}</span><span class="ct ct-${e.call_type}">${e.call_type}</span><span style="color:var(--muted)">TS${e.time_slot}</span>${enc}</div>`;}
+    if(e.type==='gps_event') return`<div class="entry" style="border-left-color:var(--green)"><span class="t">${fmt(e.timestamp)}</span><em style="font-style:normal">📍</em><span class="rid">RID:${e.radio_id}</span><span class="coords">${e.latitude.toFixed(4)}, ${e.longitude.toFixed(4)}</span><span class="spd">${e.speed_kmh} km/h</span></div>`;
+    return'';
+  }).join('');
+  let el=document.getElementById('feed');el.innerHTML=html;el.scrollTop=el.scrollHeight;
+}
+
+// ===== TOPOLOGY =====
+let netData=[{id:'n1',l:'Metro DMR',p:'DMR',enc:'NONE',key:''},{id:'n2',l:'Regional TETRA',p:'TETRA',enc:'NONE',key:''},{id:'n3',l:'County P25',p:'P25',enc:'NONE',key:''}];
+let topoSelected=null;
+
+function drawTopoDetail(d, icons) {
+  let p = document.getElementById('topoDetail');
+  if(!p) {
+    p = document.createElement('div');
+    p.id = 'topoDetail';
+    p.style.cssText = 'position:absolute; bottom:20px; right:20px; padding:16px 20px; background:var(--glass); border:1px solid var(--border); border-radius:12px; min-width:200px; box-shadow:0 0 20px rgba(0,0,0,0.5); backdrop-filter:blur(8px); animation:slideIn 0.3s ease;';
+    document.getElementById('tab-topo').appendChild(p);
+  }
+  let html = `<h3 style="margin-bottom:6px;font-size:15px">${icons[d.type]} ${d.l}</h3>
+              <div style="font-size:11px;color:var(--muted);margin-bottom:10px;letter-spacing:1px">${d.type.replace('_',' ').toUpperCase()}</div>`;
+  if(d.p) html+=`<div style="font-size:12px;margin-bottom:4px">Protocol: <b style="color:var(--text)">${d.p}</b></div>`;
+  if(d.enc) html+=`<div style="font-size:12px;margin-bottom:4px">Encryption: <b style="color:var(--cyan)">${d.enc}</b></div>`;
+  
+  if(d.type==='network') {
+    html+=`<button class="detail-btn" onclick="openModal('${d.id}')">✏️ Edit Network</button>`;
+  }
+  html+=`<button style="position:absolute;top:8px;right:12px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px" onclick="document.getElementById('topoDetail').remove()">✕</button>`;
+  p.innerHTML = html;
+}
+
+function drawTopo(){
+  let svg=document.getElementById('svg'),W=svg.clientWidth,H=svg.clientHeight;svg.innerHTML='';
+  let nodes=[],edges=[];
+  // Networks
+  netData.forEach(n=>nodes.push({...n,type:'network',level:0}));
+  // Base stations
+  [{id:'b1',l:'Downtown Tower',n:'n1'},{id:'b2',l:'Airport Site',n:'n1'},{id:'b3',l:'TETRA Central',n:'n2'},{id:'b4',l:'TETRA North',n:'n2'},{id:'b5',l:'P25 Main',n:'n3'}].forEach(b=>{nodes.push({...b,type:'base_station',level:1});edges.push({s:b.n,t:b.id});});
+  // Talkgroups
+  let tgData=[{id:'t1',l:'Dispatch',b:'b1'},{id:'t2',l:'Operations',b:'b1'},{id:'t3',l:'Tactical',b:'b1'},{id:'t4',l:'Airport Ops',b:'b2'},{id:'t5',l:'TETRA Main',b:'b3'},{id:'t6',l:'TETRA Ops',b:'b3'},{id:'t7',l:'North Patrol',b:'b4'},{id:'t8',l:'P25 Dispatch',b:'b5'},{id:'t9',l:'P25 Tac',b:'b5'}];
+  tgData.forEach(t=>{nodes.push({...t,type:'talkgroup',level:2});edges.push({s:t.b,t:t.id});});
+  // Radios (subset)
+  for(let i=1;i<=12;i++){let rid='r'+i;nodes.push({id:rid,l:'Unit-'+i,type:'radio',level:3});edges.push({s:pick(tgData).id,t:rid,w:Math.floor(rnd(1,10))});}
+
+  let nm={};nodes.forEach((n,i)=>{n.x=W/2+Math.cos(i*0.7)*130*(n.level+1)*0.4;n.y=H/2+Math.sin(i*0.7)*100*(n.level+1)*0.4;n.vx=0;n.vy=0;nm[n.id]=n;});
+  // Simulate forces
+  for(let it=0;it<100;it++){
+    nodes.forEach(a=>{nodes.forEach(b=>{if(a===b)return;let dx=a.x-b.x,dy=a.y-b.y,d=Math.sqrt(dx*dx+dy*dy)+1,f=250/d;a.vx+=dx/d*f;a.vy+=dy/d*f;});});
+    edges.forEach(e=>{let s=nm[e.s],t=nm[e.t];if(!s||!t)return;let dx=t.x-s.x,dy=t.y-s.y,d=Math.sqrt(dx*dx+dy*dy)+1,f=(d-70)*0.04;s.vx+=dx/d*f;s.vy+=dy/d*f;t.vx-=dx/d*f;t.vy-=dy/d*f;});
+    nodes.forEach(n=>{n.vx+=(W/2-n.x)*0.002;n.vy+=(H/2-n.y)*0.002;n.x+=n.vx*0.3;n.y+=n.vy*0.3;n.vx*=0.75;n.vy*=0.75;n.x=Math.max(40,Math.min(W-40,n.x));n.y=Math.max(40,Math.min(H-40,n.y));});
+  }
+  let colors={network:'#3b82f6',base_station:'#06b6d4',talkgroup:'#d946ef',radio:'#f59e0b'};
+  let sizes={network:22,base_station:16,talkgroup:12,radio:7};
+  let icons={network:'🌐',base_station:'📡',talkgroup:'👥',radio:'📻'};
+  edges.forEach(e=>{let s=nm[e.s],t=nm[e.t];if(!s||!t)return;let ln=document.createElementNS('http://www.w3.org/2000/svg','line');ln.setAttribute('x1',s.x);ln.setAttribute('y1',s.y);ln.setAttribute('x2',t.x);ln.setAttribute('y2',t.y);ln.setAttribute('class','topo-link');ln.setAttribute('stroke-width',Math.min(e.w||1,4));svg.appendChild(ln);});
+  nodes.forEach(n=>{
+    let g=document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.style.cursor = 'pointer';
+    g.onclick = () => drawTopoDetail(n, icons);
+    let c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('cx',n.x);c.setAttribute('cy',n.y);c.setAttribute('r',sizes[n.type]);c.setAttribute('fill',colors[n.type]);c.setAttribute('fill-opacity','0.2');c.setAttribute('stroke',colors[n.type]);c.setAttribute('stroke-width','2');g.appendChild(c);let tx=document.createElementNS('http://www.w3.org/2000/svg','text');tx.setAttribute('x',n.x);tx.setAttribute('y',n.y+sizes[n.type]+12);tx.setAttribute('text-anchor','middle');tx.setAttribute('class','node-label');tx.textContent=n.l.slice(0,14);g.appendChild(tx);let ic=document.createElementNS('http://www.w3.org/2000/svg','text');ic.setAttribute('x',n.x);ic.setAttribute('y',n.y+4);ic.setAttribute('text-anchor','middle');ic.setAttribute('font-size',sizes[n.type]*0.7);ic.textContent=icons[n.type];g.appendChild(ic);svg.appendChild(g);
+  });
+}
+
+// ===== MAP =====
+function drawMap(){
+  let wrap=document.getElementById('mw');
+  wrap.querySelectorAll('.map-dot,.map-tooltip').forEach(e=>e.remove());
+  document.getElementById('mc').textContent=gpsPos.length+' tracked';
+  if(!gpsPos.length)return;
+  let W=wrap.clientWidth,H=wrap.clientHeight;
+  let lats=gpsPos.map(p=>p.latitude),lons=gpsPos.map(p=>p.longitude);
+  let mnLa=Math.min(...lats)-.01,mxLa=Math.max(...lats)+.01,mnLo=Math.min(...lons)-.01,mxLo=Math.max(...lons)+.01;
+  gpsPos.forEach(p=>{
+    let x=((p.longitude-mnLo)/(mxLo-mnLo))*W,y=((mxLa-p.latitude)/(mxLa-mnLa))*H;
+    let dot=document.createElement('div');dot.className='map-dot';dot.style.left=x+'px';dot.style.top=y+'px';
+    let tip=document.createElement('div');tip.className='map-tooltip';
+    tip.innerHTML=`<b>${p.radio_alias} (${p.radio_id})</b><br>Lat: ${p.latitude}<br>Lon: ${p.longitude}<br>${p.speed_kmh} km/h · ${p.heading.toFixed(0)}°`;
+    dot.onmouseenter=()=>{tip.style.display='block';tip.style.left=(x+15)+'px';tip.style.top=(y-10)+'px';};
+    dot.onmouseleave=()=>{tip.style.display='none';};
+    wrap.appendChild(dot);wrap.appendChild(tip);
+  });
+}
+
+// ===== SDR =====
+function drawSDR(){
+  document.getElementById('sg').innerHTML=[
+    {serial:'MOCK-RTL-001',type:'RTL-SDR',label:'Primary Scanner',mode:'SWEEP',status:'ACTIVE',freq:460.1,sr:2400000,gain:40},
+    {serial:'MOCK-HRF-001',type:'HackRF',label:'Secondary Scanner',mode:'PINNED',status:'ACTIVE',freq:390.1,sr:2400000,gain:38}
+  ].map(d=>`<div class="sdr-card panel"><div class="sdr-hdr"><em>🟢</em><div><h3>${d.label}</h3><div class="sdr-type">${d.type}</div></div></div>
+    <div class="sdr-row"><span class="sdr-lbl">Serial</span><span class="sdr-val">${d.serial}</span></div>
+    <div class="sdr-row"><span class="sdr-lbl">Mode</span><span class="sdr-val mode-${d.mode}">${d.mode}</span></div>
+    <div class="sdr-row"><span class="sdr-lbl">Frequency</span><span class="sdr-val">${d.freq.toFixed(4)} MHz</span></div>
+    <div class="sdr-row"><span class="sdr-lbl">Sample Rate</span><span class="sdr-val">${(d.sr/1e6).toFixed(1)} MS/s</span></div>
+    <div class="sdr-row"><span class="sdr-lbl">Gain</span><span class="sdr-val">${d.gain} dB</span></div>
+    <div class="sdr-row"><span class="sdr-lbl">Status</span><span class="sdr-val" style="color:var(--green)">${d.status}</span></div></div>`).join('');
+}
+
+// ===== AUDIO PLAYER & MODAL =====
+let audioCtx = null, autoplay = true, audVol = 0.7;
+function toggleAudio() {
+  autoplay = !autoplay;
+  let b = document.getElementById('btnAutoplay');
+  b.className = 'audio-btn' + (autoplay ? ' on' : '');
+  b.textContent = autoplay ? '⏵ AUTO' : '⏸ MUTED';
+}
+document.getElementById('audVol').oninput = e => { audVol = parseFloat(e.target.value); };
+
+function playAudio() {
+  if(!autoplay) return;
+  if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  let sr = 8000, len = sr * 0.3;
+  let buf = audioCtx.createBuffer(1, len, sr);
+  let dat = buf.getChannelData(0);
+  let freq = 440 + Math.random()*200;
+  for(let i=0; i<len; i++) dat[i] = Math.sin(2 * Math.PI * freq * i / sr) * audVol;
+  let src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  src.connect(audioCtx.destination);
+  let ind = document.getElementById('audInd');
+  ind.classList.add('active');
+  src.onended = () => ind.classList.remove('active');
+  src.start();
+}
+
+let oldGenMeta = genMeta;
+genMeta = function() {
+  let res = oldGenMeta();
+  if(!res.encrypted) playAudio();
+  return res;
+}
+
+let currentNet = null;
+function openModal(nid) {
+  currentNet = netData.find(n => n.id === nid);
+  if(!currentNet) return;
+  document.getElementById('mName').value = currentNet.l;
+  document.getElementById('mEnc').value = currentNet.enc || 'NONE';
+  document.getElementById('mKey').value = currentNet.key || '';
+  document.getElementById('editModal').style.display = 'flex';
+}
+function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+function saveModal() {
+  if(currentNet) {
+    currentNet.l = document.getElementById('mName').value;
+    currentNet.enc = document.getElementById('mEnc').value;
+    currentNet.key = document.getElementById('mKey').value;
+    if (activeTab === 'topo') drawTopo();
+  }
+  closeModal();
+}
+document.getElementById('editModal').onclick = closeModal;
+
+// ===== START =====
+setInterval(tick, 800);
+setTimeout(()=>{for(let i=0;i<20;i++) tick();}, 100);
+</script>
+</body>
+</html>

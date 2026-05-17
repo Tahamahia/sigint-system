@@ -1,0 +1,65 @@
+.livelog-container { display: flex; flex-direction: column; height: 100%; }
+
+.livelog-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 16px; flex-wrap: wrap; gap: 12px;
+}
+
+.livelog-header h2 { font-size: 18px; font-weight: 600; }
+
+.livelog-controls { display: flex; gap: 8px; align-items: center; }
+
+.filter-select, .filter-input {
+  background: var(--bg-secondary); border: 1px solid var(--border-glass);
+  color: var(--text-primary); padding: 6px 12px; border-radius: var(--radius-sm);
+  font-size: 13px; font-family: var(--font-sans);
+}
+.filter-input { width: 180px; }
+.filter-select:focus, .filter-input:focus { outline: none; border-color: var(--accent-cyan); }
+
+.scroll-btn {
+  background: var(--bg-secondary); border: 1px solid var(--border-glass);
+  color: var(--text-secondary); padding: 6px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 12px; font-family: var(--font-mono);
+}
+.scroll-btn.active { color: var(--accent-green); border-color: rgba(16, 185, 129, 0.3); }
+
+.livelog-feed {
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+
+.livelog-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  height: 100%; color: var(--text-muted); gap: 8px;
+}
+.empty-icon { font-size: 48px; opacity: 0.3; }
+.empty-hint { font-size: 12px; }
+
+.log-entry {
+  display: flex; align-items: center; gap: 12px;
+  padding: 6px 12px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 12px;
+  border-left: 3px solid var(--text-muted);
+  background: rgba(0, 0, 0, 0.2);
+  transition: background 0.15s;
+}
+.log-entry:hover { background: rgba(100, 116, 139, 0.1); }
+
+.log-time { color: var(--text-muted); min-width: 85px; }
+.log-proto { font-weight: 700; min-width: 50px; text-transform: uppercase; }
+.log-freq { color: var(--text-secondary); }
+.log-snr { color: var(--accent-green); }
+.log-power { color: var(--text-muted); }
+.log-rid { color: var(--accent-cyan); }
+.log-tg { color: var(--accent-magenta); }
+.log-slot { color: var(--text-muted); font-size: 11px; }
+.log-enc { color: var(--accent-red); font-size: 11px; }
+.log-coords { color: var(--accent-green); }
+.log-speed { color: var(--text-muted); }
+.log-gps-icon { font-size: 14px; }
+
+.log-calltype { padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+.log-calltype.group { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); }
+.log-calltype.private { background: rgba(217, 70, 239, 0.15); color: var(--accent-magenta); }
+.log-calltype.emergency { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); animation: pulse-glow 1s infinite; }
